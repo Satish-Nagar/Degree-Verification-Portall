@@ -103,11 +103,10 @@ export default function StudentPanel() {
                         </>
                       ) : (
                         <span
-                          className={`px-3 py-1 rounded-full text-sm ${
-                            req.status === "pending"
+                          className={`px-3 py-1 rounded-full text-sm ${req.status === "pending"
                               ? "bg-yellow-100 text-yellow-800"
                               : "bg-red-100 text-red-800"
-                          }`}
+                            }`}
                         >
                           {req.status}
                         </span>
@@ -194,6 +193,44 @@ export default function StudentPanel() {
                     className="mt-3 inline-flex w-full justify-center rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white inset-ring inset-ring-white/5 hover:bg-white/20 sm:mt-0 sm:w-auto"
                   >
                     Close
+                  </button>
+                  <button
+                    type="button"
+                    data-autofocus
+                    onClick={async () => {
+                      if (!selectedRequest) return;
+                      try {
+                        const { jsPDF } = await import('jspdf');
+                        const doc = new jsPDF();
+
+                        const title = `Request: ${selectedRequest.organizationName ?? selectedRequest._id}`;
+                        const date = new Date().toLocaleDateString();
+                        doc.setFontSize(16);
+                        doc.text(title, 14, 20);
+                        doc.setFontSize(10);
+                        doc.text(`Date: ${date}`, 14, 28);
+
+                        const data = selectedRequest.approvedFieldsData || {};
+                        const lines = Object.entries(data).length
+                          ? Object.entries(data).map(([k, v]) => `${k}: ${v ?? 'N/A'}`)
+                          : ['No approved fields available.'];
+
+                        doc.setFontSize(12);
+                        doc.text(lines, 14, 40, { maxWidth: 180 });
+
+                        const fileName = `${(selectedRequest.organizationName || 'request')}_${new Date().toISOString().slice(0,10)}.pdf`;
+                        doc.save(fileName);
+                      } catch (err: any) {
+                        console.error('PDF error', err);
+                        alert('PDF generation failed. Run `npm install jspdf` if missing.');
+                      } finally {
+                        setOpen(false);
+                        setSelectedRequest(null);
+                      }
+                    }}
+                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white inset-ring inset-ring-white/5 hover:bg-white/20 sm:mt-0 sm:w-auto"
+                  >
+                    Download
                   </button>
                 </div>
               </DialogPanel>
